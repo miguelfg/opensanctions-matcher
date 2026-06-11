@@ -199,3 +199,22 @@ def test_fts_query_special_chars():
     # Non-alnum single token → quoted phrase (safe fallback)
     q = fts_query("Al-Qaeda")
     assert q.startswith('"') and q.endswith('"')
+
+
+def test_index_is_stale_missing_source(tmp_path):
+    """Regression test: index_is_stale should raise FileNotFoundError if source doesn't exist."""
+    import pytest
+    source = tmp_path / "nonexistent.txt"
+    index = tmp_path / "nonexistent.txt.fts5.db"
+    index.touch()
+    with pytest.raises(FileNotFoundError):
+        index_is_stale(source, index)
+
+
+def test_fts_query_empty_raises():
+    """Regression test: fts_query should raise ValueError for empty strings."""
+    import pytest
+    with pytest.raises(ValueError):
+        fts_query("")
+    with pytest.raises(ValueError):
+        fts_query("   ")

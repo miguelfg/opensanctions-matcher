@@ -60,6 +60,8 @@ def index_is_stale(source: Path, index: Path) -> bool:
     """Return True if the index is missing or older than source."""
     if not index.exists():
         return True
+    if not source.exists():
+        raise FileNotFoundError(f"Source file not found: {source}")
     return source.stat().st_mtime > index.stat().st_mtime
 
 
@@ -72,6 +74,8 @@ def fts_query(target: str) -> str:
     Single word with special chars → quoted phrase (safe fallback)
     """
     stripped = target.strip()
+    if not stripped:
+        raise ValueError("fts_query requires a non-empty target string")
     if " " in stripped:
         return '"' + stripped.replace('"', '""') + '"'
     if len(stripped) >= 20 and stripped.isalnum():
