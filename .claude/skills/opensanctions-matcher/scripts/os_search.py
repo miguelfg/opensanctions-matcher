@@ -215,7 +215,8 @@ def build_ftm_index(source: Path, index: Path) -> None:
             if entity is None:
                 continue
             props = entity.get("properties", {})
-            # Collect identifier-like fields so wallet addresses / reg numbers are searchable
+            # Index common identifier properties so wallet addresses and document
+            # numbers are searchable. Extend this list as the FtM schema evolves.
             identifiers = " ".join(
                 v
                 for key in ("publicKey", "ibanNumber", "registrationNumber",

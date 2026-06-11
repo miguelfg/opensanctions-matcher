@@ -1,9 +1,10 @@
 import os
+import shutil
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from os_search import os_web_url, get_index_path, index_is_stale, fts_query
+from os_search import os_web_url, get_index_path, index_is_stale, fts_query, build_ftm_index, search_fts_ftm
 
 
 def test_os_web_url_basic():
@@ -378,10 +379,6 @@ def test_search_csv_no_fts_fallback(simple_csv):
     assert result["Navalny"][0]["id"] == "Q125"
 
 
-import shutil as _shutil_t5
-from os_search import build_ftm_index, search_fts_ftm
-
-
 def test_build_ftm_index_creates_db(ftm_json, tmp_path):
     index = tmp_path / "entities.ftm.json.fts5.db"
     build_ftm_index(ftm_json, index)
@@ -419,7 +416,7 @@ def test_search_fts_ftm_miss(ftm_json, tmp_path):
 
 
 def test_search_target_uses_fts(ftm_json, tmp_path):
-    _shutil_t5.copy(ftm_json, tmp_path / "entities.ftm.json")
+    shutil.copy(ftm_json, tmp_path / "entities.ftm.json")
     dataset = tmp_path / "entities.ftm.json"
     from os_search import search_target
     results = search_target("Navalny", dataset, schema_filter=None, rg_bin=None, use_fts=True)
@@ -427,7 +424,7 @@ def test_search_target_uses_fts(ftm_json, tmp_path):
 
 
 def test_search_target_schema_filter_with_fts(ftm_json, tmp_path):
-    _shutil_t5.copy(ftm_json, tmp_path / "entities.ftm.json")
+    shutil.copy(ftm_json, tmp_path / "entities.ftm.json")
     dataset = tmp_path / "entities.ftm.json"
     from os_search import search_target
     assert search_target("Navalny", dataset, "Company", rg_bin=None, use_fts=True) == []
