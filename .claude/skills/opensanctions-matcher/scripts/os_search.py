@@ -115,20 +115,39 @@ def ensure_index(source: Path, file_type: str) -> Path:
     return index
 
 
+def search_fts_names(index: Path, target: str) -> list[str]:
+    """Search the names.txt FTS5 index. Returns list of matched name strings."""
+    import sqlite3 as _sq
+    con = _sq.connect(index)
+    try:
+        rows = con.execute(
+            "SELECT name FROM names WHERE names MATCH ? ORDER BY rank",
+            (fts_query(target),),
+        ).fetchall()
+        return [r[0] for r in rows]
+    except _sq.OperationalError:
+        return []
+    finally:
+        con.close()
+
+
 def os_web_url(dataset_name: str, target: str) -> str:
     """Return the OpenSanctions web search URL for a target within a dataset."""
     return f"https://www.opensanctions.org/search/?scope={dataset_name}&q={quote_plus(target)}"
 
 
-def search_names_txt(path: Path, targets: list[str], rg_bin: str | None) -> dict[str, list[str]]:
+def search_names_txt(path: Path, targets: list[str], rg_bin: str | None,
+                     use_fts: bool = True) -> dict[str, list[str]]:
     """Search names.txt for each target. Returns {target: [matched_lines]}.
 
-    Strips blank lines and comment lines (starting with #) before matching.
-    Matching is case-insensitive substring search.
+    use_fts=True (default): FTS5 token-aware search via index.
+    use_fts=False: original case-insensitive substring scan.
     """
+    if use_fts:
+        index = ensure_index(path, "names")
+        return {target: search_fts_names(index, target) for target in targets}
     raw = path.read_text(encoding="utf-8", errors="replace").splitlines()
     lines = [l for l in raw if l.strip() and not l.strip().startswith("#")]
-
     results: dict[str, list[str]] = {}
     for target in targets:
         t_lower = target.lower()

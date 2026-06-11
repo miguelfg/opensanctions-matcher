@@ -280,3 +280,48 @@ def test_ensure_index_reuses_fresh_index(tmp_path):
     mtime = index.stat().st_mtime
     ensure_index(source, "names")
     assert index.stat().st_mtime == mtime
+
+
+from os_search import search_fts_names
+
+
+def test_search_fts_names_hit(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("Alexei Navalny\nGazprom\n")
+    idx = ensure_index(source, "names")
+    assert any("Navalny" in r for r in search_fts_names(idx, "Navalny"))
+
+
+def test_search_fts_names_miss(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("Alexei Navalny\n")
+    idx = ensure_index(source, "names")
+    assert search_fts_names(idx, "Putin") == []
+
+
+def test_search_fts_names_multiword(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("Alexei Navalny\nNavalny Foundation\n")
+    idx = ensure_index(source, "names")
+    assert any("Alexei Navalny" in r for r in search_fts_names(idx, "Alexei Navalny"))
+
+
+def test_search_fts_names_case_insensitive(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("Gazprom\n")
+    idx = ensure_index(source, "names")
+    assert len(search_fts_names(idx, "gazprom")) >= 1
+
+
+def test_search_names_txt_fts_default(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("Alexei Navalny\nGazprom\n")
+    result = search_names_txt(source, ["Navalny"], rg_bin=None, use_fts=True)
+    assert any("Navalny" in line for line in result["Navalny"])
+
+
+def test_search_names_txt_no_fts_substring(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("Alexei Navalny\nGazprom\n")
+    result = search_names_txt(source, ["Nav"], rg_bin=None, use_fts=False)
+    assert len(result["Nav"]) == 1  # substring "Nav" inside "Navalny"
