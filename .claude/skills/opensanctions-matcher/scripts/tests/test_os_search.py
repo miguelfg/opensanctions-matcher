@@ -107,7 +107,7 @@ def run_script(args: list[str]) -> subprocess.CompletedProcess:
 def test_main_names_phase1_hit(dataset_dir):
     r = run_script(["--dataset-dir", str(dataset_dir),
                     "--targets", "TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy"])
-    assert "NAMES MATCH" in r.stdout
+    assert "FTS MATCH" in r.stdout
     assert "opensanctions.org/search" in r.stdout
     assert r.returncode == 0
 
@@ -148,7 +148,7 @@ def test_main_explicit_file_names(dataset_dir):
     r = run_script(["--dataset-dir", str(dataset_dir),
                     "--file", "names",
                     "--targets", "Hamas Finance Committee"])
-    assert "NAMES MATCH" in r.stdout
+    assert "FTS MATCH" in r.stdout
 
 
 def test_get_index_path(tmp_path):
@@ -429,3 +429,19 @@ def test_search_target_schema_filter_with_fts(ftm_json, tmp_path):
     from os_search import search_target
     assert search_target("Navalny", dataset, "Company", rg_bin=None, use_fts=True) == []
     assert search_target("Navalny", dataset, "Person", rg_bin=None, use_fts=True)[0]["id"] == "Q201"
+
+
+def test_main_no_fts_uses_names_match_label(dataset_dir):
+    r = run_script(["--dataset-dir", str(dataset_dir),
+                    "--targets", "TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy",
+                    "--no-fts"])
+    assert "NAMES MATCH" in r.stdout
+    assert r.returncode == 0
+
+
+def test_main_no_fts_still_returns_results(dataset_dir):
+    r = run_script(["--dataset-dir", str(dataset_dir),
+                    "--targets", "TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy",
+                    "--no-fts"])
+    assert r.returncode == 0
+    assert "CryptoWallet" in r.stdout

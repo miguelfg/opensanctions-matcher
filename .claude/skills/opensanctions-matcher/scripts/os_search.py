@@ -559,6 +559,11 @@ def main():
                         help="Filter by FtM schema (only applies to --file ftm)")
     parser.add_argument("--no-holder-lookup", action="store_true",
                         help="Skip holder entity lookups (--file ftm only)")
+    parser.add_argument(
+        "--no-fts",
+        action="store_true",
+        help="Disable FTS5 index; use original grep/substring search",
+    )
     args = parser.parse_args()
 
     # Backwards compat: --dataset path/to/entities.ftm.json → force --file ftm
@@ -597,6 +602,7 @@ def main():
         sys.exit(1)
 
     rg_bin = find_rg()
+    use_fts = not args.no_fts
     search_tool = f"ripgrep ({rg_bin})" if rg_bin else "grep"
     dataset_name = dataset_dir.name
 
@@ -616,7 +622,7 @@ def main():
     if args.file == "ftm":
         for target in targets:
             print(f"── Searching: {target}")
-            matches = search_target(target, active_file, args.schema, rg_bin)
+            matches = search_target(target, active_file, args.schema, rg_bin, use_fts=use_fts)
             if not matches:
                 print(f"  ❌ NO MATCH\n")
                 continue
@@ -632,7 +638,7 @@ def main():
 
     # ── CSV path ──────────────────────────────────────────────────────────────
     elif args.file == "csv":
-        csv_results = search_csv(active_file, targets, rg_bin)
+        csv_results = search_csv(active_file, targets, rg_bin, use_fts=use_fts)
         for target, rows in csv_results.items():
             print(f"── Searching: {target}")
             if not rows:
@@ -648,7 +654,7 @@ def main():
 
     # ── Names-first two-phase path (default) ─────────────────────────────────
     else:
-        names_results = search_names_txt(active_file, targets, rg_bin)
+        names_results = search_names_txt(active_file, targets, rg_bin, use_fts=use_fts)
         hit_targets = [t for t, lines in names_results.items() if lines]
 
         for target, matched_lines in names_results.items():
@@ -659,7 +665,8 @@ def main():
                 print()
                 continue
             total_hits += len(matched_lines)
-            print(f"  ✅ NAMES MATCH ({len(matched_lines)} line(s))")
+            match_label = "NAMES MATCH" if args.no_fts else "FTS MATCH"
+            print(f"  ✅ {match_label} ({len(matched_lines)} line(s))")
             for line in matched_lines:
                 print(f"  Matched : {line}")
             print(f"  Web URL : {os_web_url(dataset_name, target)}")
@@ -672,7 +679,7 @@ def main():
                 print(f"[info] Download it to {csv_file} for property details")
             else:
                 print(f"── Phase 2: enriching {len(hit_targets)} hit(s) from targets.simple.csv\n")
-                csv_results = search_csv(csv_file, hit_targets, rg_bin)
+                csv_results = search_csv(csv_file, hit_targets, rg_bin, use_fts=use_fts)
                 for target, rows in csv_results.items():
                     if not rows:
                         print(f"  [{target}] not found in CSV (name-only match)\n")
