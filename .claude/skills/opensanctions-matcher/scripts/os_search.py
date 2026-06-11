@@ -268,6 +268,80 @@ def search_fts_ftm(index: Path, target: str) -> list[dict]:
         con.close()
 
 
+def search_fuzzy(
+    index: Path,
+    target: str,
+    threshold: int,
+    file_type: str,
+    existing_ids: set[str] | None = None,
+) -> list[dict]:
+    """Rapidfuzz WRatio scan over index terms. Returns hits not in existing_ids.
+
+    file_type='names'     → existing_ids contains matched name strings.
+    file_type='csv'/'ftm' → existing_ids contains entity ID strings.
+    Each result has '_fuzzy_score'; names results also have '_fuzzy_match'.
+    """
+    try:
+        from rapidfuzz import process as rp, fuzz
+    except ImportError:
+        print("[error] --fuzzy requires rapidfuzz: pip install rapidfuzz", file=sys.stderr)
+        return []
+
+    import sqlite3 as _sq
+
+    existing_ids = existing_ids or set()
+    con = _sq.connect(index)
+    try:
+        if file_type == "names":
+            choices = {r[0]: r[0] for r in con.execute("SELECT name FROM names").fetchall()}
+            return [
+                {"_fuzzy_match": name, "_fuzzy_score": int(score)}
+                for name, score, _ in rp.extract(
+                    target, choices, scorer=fuzz.WRatio, score_cutoff=threshold
+                )
+                if name not in existing_ids
+            ]
+
+        elif file_type == "csv":
+            rows = con.execute("SELECT id, caption, raw_row FROM entities").fetchall()
+            choices = {r[0]: r[1] for r in rows}
+            raw_by_id = {r[0]: r[2] for r in rows}
+            results = []
+            for caption, score, entity_id in rp.extract(
+                target, choices, scorer=fuzz.WRatio, score_cutoff=threshold
+            ):
+                if entity_id in existing_ids:
+                    continue
+                try:
+                    row = json.loads(raw_by_id[entity_id])
+                    row["_fuzzy_score"] = int(score)
+                    results.append(row)
+                except (json.JSONDecodeError, KeyError):
+                    continue
+            return results
+
+        elif file_type == "ftm":
+            rows = con.execute("SELECT id, caption, raw_json FROM entities").fetchall()
+            choices = {r[0]: r[1] for r in rows}
+            raw_by_id = {r[0]: r[2] for r in rows}
+            results = []
+            for caption, score, entity_id in rp.extract(
+                target, choices, scorer=fuzz.WRatio, score_cutoff=threshold
+            ):
+                if entity_id in existing_ids:
+                    continue
+                entity = parse_entity(raw_by_id.get(entity_id, ""))
+                if entity:
+                    entity["_fuzzy_score"] = int(score)
+                    results.append(entity)
+            return results
+
+    finally:
+        con.close()
+
+    return []
+
+
 def os_web_url(dataset_name: str, target: str) -> str:
     """Return the OpenSanctions web search URL for a target within a dataset."""
     return f"https://www.opensanctions.org/search/?scope={dataset_name}&q={quote_plus(target)}"

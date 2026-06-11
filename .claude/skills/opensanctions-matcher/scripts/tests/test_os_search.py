@@ -445,3 +445,59 @@ def test_main_no_fts_still_returns_results(dataset_dir):
                     "--no-fts"])
     assert r.returncode == 0
     assert "CryptoWallet" in r.stdout
+
+
+from os_search import search_fuzzy
+
+
+def test_search_fuzzy_names_finds_approximate(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("Vladimir Putin\nVladimyr Pootin\nGazprom\n")
+    idx = ensure_index(source, "names")
+    fts_hits = set(search_fts_names(idx, "Vladimir Putin"))
+    results = search_fuzzy(idx, "Vladimir Putin", threshold=70,
+                           file_type="names", existing_ids=fts_hits)
+    assert any(r["_fuzzy_match"] == "Vladimyr Pootin" for r in results)
+
+
+def test_search_fuzzy_names_threshold(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("Vladimir Putin\nXyzzy Completely Different\n")
+    idx = ensure_index(source, "names")
+    results = search_fuzzy(idx, "Vladimir Putin", threshold=95,
+                           file_type="names", existing_ids=set())
+    assert not any(r["_fuzzy_match"] == "Xyzzy Completely Different" for r in results)
+
+
+def test_search_fuzzy_names_deduplicates(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("Vladimir Putin\n")
+    idx = ensure_index(source, "names")
+    results = search_fuzzy(idx, "Vladimir Putin", threshold=80,
+                           file_type="names", existing_ids={"Vladimir Putin"})
+    assert not any(r["_fuzzy_match"] == "Vladimir Putin" for r in results)
+
+
+def test_search_fuzzy_csv_finds_approximate(simple_csv):
+    idx = ensure_index(simple_csv, "csv")
+    results = search_fuzzy(idx, "Aleksei Navalnyy", threshold=70,
+                           file_type="csv", existing_ids=set())
+    assert any("Navalny" in r.get("caption", "") for r in results)
+
+
+def test_search_fuzzy_missing_rapidfuzz(tmp_path, monkeypatch, capsys):
+    import builtins
+    real_import = builtins.__import__
+
+    def mock_import(name, *args, **kwargs):
+        if name == "rapidfuzz":
+            raise ImportError("No module named 'rapidfuzz'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", mock_import)
+    source = tmp_path / "names.txt"
+    source.write_text("Test\n")
+    idx = ensure_index(source, "names")
+    result = search_fuzzy(idx, "Test", 80, "names", existing_ids=set())
+    assert result == []
+    assert "pip install rapidfuzz" in capsys.readouterr().err
