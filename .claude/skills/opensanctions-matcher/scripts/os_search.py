@@ -85,6 +85,36 @@ def fts_query(target: str) -> str:
     return '"' + stripped.replace('"', '""') + '"'
 
 
+def build_names_index(source: Path, index: Path) -> None:
+    """Build FTS5 index for a names.txt file."""
+    import sqlite3 as _sq
+    raw = source.read_text(encoding="utf-8", errors="replace").splitlines()
+    lines = [l for l in raw if l.strip() and not l.strip().startswith("#")]
+    con = _sq.connect(index)
+    con.execute("CREATE VIRTUAL TABLE names USING fts5(name, tokenize='unicode61')")
+    con.executemany("INSERT INTO names(name) VALUES (?)", [(l,) for l in lines])
+    con.commit()
+    con.close()
+
+
+def ensure_index(source: Path, file_type: str) -> Path:
+    """Return path to a fresh FTS5 index, building or rebuilding as needed."""
+    index = get_index_path(source)
+    if not index_is_stale(source, index):
+        return index
+    print(f"[info] Building FTS index for {source.name} (first run or dataset updated)...",
+          file=sys.stderr)
+    if index.exists():
+        index.unlink()
+    if file_type == "names":
+        build_names_index(source, index)
+    elif file_type == "csv":
+        build_csv_index(source, index)
+    elif file_type == "ftm":
+        build_ftm_index(source, index)
+    return index
+
+
 def os_web_url(dataset_name: str, target: str) -> str:
     """Return the OpenSanctions web search URL for a target within a dataset."""
     return f"https://www.opensanctions.org/search/?scope={dataset_name}&q={quote_plus(target)}"

@@ -218,3 +218,65 @@ def test_fts_query_empty_raises():
         fts_query("")
     with pytest.raises(ValueError):
         fts_query("   ")
+
+
+import sqlite3
+from os_search import build_names_index, ensure_index
+
+
+def test_build_names_index_creates_db(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("# comment\n\nAlexei Navalny\nGazprom\n")
+    index = tmp_path / "names.txt.fts5.db"
+    build_names_index(source, index)
+    assert index.exists()
+    con = sqlite3.connect(index)
+    names = [r[0] for r in con.execute("SELECT name FROM names").fetchall()]
+    con.close()
+    assert set(names) == {"Alexei Navalny", "Gazprom"}
+
+
+def test_build_names_index_skips_comments(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("# this is a comment\nValidName\n  \n")
+    index = tmp_path / "names.txt.fts5.db"
+    build_names_index(source, index)
+    con = sqlite3.connect(index)
+    rows = con.execute("SELECT name FROM names").fetchall()
+    con.close()
+    assert len(rows) == 1 and rows[0][0] == "ValidName"
+
+
+def test_ensure_index_builds_on_first_run(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("TestEntry\n")
+    result = ensure_index(source, "names")
+    assert result == tmp_path / "names.txt.fts5.db"
+    assert result.exists()
+
+
+def test_ensure_index_rebuilds_when_source_newer(tmp_path):
+    import time
+    source = tmp_path / "names.txt"
+    source.write_text("OldEntry\n")
+    index = ensure_index(source, "names")
+    time.sleep(0.05)
+    source.write_text("NewEntry\n")
+    import os
+    os.utime(source, None)
+    # Force source to be newer than index
+    os.utime(source, (index.stat().st_mtime + 1, index.stat().st_mtime + 1))
+    ensure_index(source, "names")
+    con = sqlite3.connect(index)
+    rows = con.execute("SELECT name FROM names").fetchall()
+    con.close()
+    assert rows[0][0] == "NewEntry"
+
+
+def test_ensure_index_reuses_fresh_index(tmp_path):
+    source = tmp_path / "names.txt"
+    source.write_text("Entry\n")
+    index = ensure_index(source, "names")
+    mtime = index.stat().st_mtime
+    ensure_index(source, "names")
+    assert index.stat().st_mtime == mtime
