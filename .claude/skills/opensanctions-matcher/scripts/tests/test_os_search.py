@@ -376,3 +376,59 @@ def test_search_csv_uses_fts_by_default(simple_csv):
 def test_search_csv_no_fts_fallback(simple_csv):
     result = search_csv(simple_csv, ["Navalny"], rg_bin=None, use_fts=False)
     assert result["Navalny"][0]["id"] == "Q125"
+
+
+import shutil as _shutil_t5
+from os_search import build_ftm_index, search_fts_ftm
+
+
+def test_build_ftm_index_creates_db(ftm_json, tmp_path):
+    index = tmp_path / "entities.ftm.json.fts5.db"
+    build_ftm_index(ftm_json, index)
+    assert index.exists()
+    import sqlite3 as _sq
+    con = _sq.connect(index)
+    ids = [r[0] for r in con.execute("SELECT id FROM entities").fetchall()]
+    con.close()
+    assert set(ids) == {"Q200", "Q201", "Q202"}
+
+
+def test_build_ftm_index_indexes_aliases(ftm_json, tmp_path):
+    index = tmp_path / "entities.ftm.json.fts5.db"
+    build_ftm_index(ftm_json, index)
+    import sqlite3 as _sq
+    con = _sq.connect(index)
+    rows = con.execute(
+        "SELECT id FROM entities WHERE entities MATCH 'HFC'"
+    ).fetchall()
+    con.close()
+    assert ("Q202",) in rows
+
+
+def test_search_fts_ftm_hit(ftm_json, tmp_path):
+    index = tmp_path / "entities.ftm.json.fts5.db"
+    build_ftm_index(ftm_json, index)
+    results = search_fts_ftm(index, "Navalny")
+    assert len(results) == 1 and results[0]["id"] == "Q201"
+
+
+def test_search_fts_ftm_miss(ftm_json, tmp_path):
+    index = tmp_path / "entities.ftm.json.fts5.db"
+    build_ftm_index(ftm_json, index)
+    assert search_fts_ftm(index, "NonexistentXYZ99999") == []
+
+
+def test_search_target_uses_fts(ftm_json, tmp_path):
+    _shutil_t5.copy(ftm_json, tmp_path / "entities.ftm.json")
+    dataset = tmp_path / "entities.ftm.json"
+    from os_search import search_target
+    results = search_target("Navalny", dataset, schema_filter=None, rg_bin=None, use_fts=True)
+    assert len(results) == 1 and results[0]["id"] == "Q201"
+
+
+def test_search_target_schema_filter_with_fts(ftm_json, tmp_path):
+    _shutil_t5.copy(ftm_json, tmp_path / "entities.ftm.json")
+    dataset = tmp_path / "entities.ftm.json"
+    from os_search import search_target
+    assert search_target("Navalny", dataset, "Company", rg_bin=None, use_fts=True) == []
+    assert search_target("Navalny", dataset, "Person", rg_bin=None, use_fts=True)[0]["id"] == "Q201"

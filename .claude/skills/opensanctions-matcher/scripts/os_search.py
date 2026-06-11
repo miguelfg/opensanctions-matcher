@@ -192,6 +192,81 @@ def search_fts_csv(index: Path, target: str) -> list[dict]:
         con.close()
 
 
+def build_ftm_index(source: Path, index: Path) -> None:
+    """Build FTS5 index for an entities.ftm.json file."""
+    import sqlite3 as _sq
+    con = _sq.connect(index)
+    con.execute("DROP TABLE IF EXISTS entities")
+    con.execute("""
+        CREATE VIRTUAL TABLE entities USING fts5(
+            id          UNINDEXED,
+            caption,
+            names,
+            aliases,
+            identifiers,
+            raw_json    UNINDEXED,
+            tokenize    = 'unicode61'
+        )
+    """)
+    batch, row_count = [], 0
+    with open(source, encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            entity = parse_entity(line)
+            if entity is None:
+                continue
+            props = entity.get("properties", {})
+            # Collect identifier-like fields so wallet addresses / reg numbers are searchable
+            identifiers = " ".join(
+                v
+                for key in ("publicKey", "ibanNumber", "registrationNumber",
+                            "taxNumber", "passportNumber", "idNumber")
+                for v in props.get(key, [])
+            )
+            batch.append((
+                entity.get("id", ""),
+                entity.get("caption", ""),
+                " ".join(props.get("name", [])),
+                " ".join(props.get("alias", [])),
+                identifiers,
+                line.strip(),
+            ))
+            row_count += 1
+            if len(batch) >= 1000:
+                con.executemany("INSERT INTO entities VALUES (?,?,?,?,?,?)", batch)
+                batch = []
+            if row_count % 100_000 == 0:
+                print(f"[info] Indexed {row_count:,} entities...", file=sys.stderr)
+    if batch:
+        con.executemany("INSERT INTO entities VALUES (?,?,?,?,?,?)", batch)
+    con.commit()
+    con.close()
+
+
+def search_fts_ftm(index: Path, target: str) -> list[dict]:
+    """Search the FtM JSON FTS5 index. Returns list of parsed entity dicts."""
+    import sqlite3 as _sq
+    con = _sq.connect(index)
+    try:
+        rows = con.execute(
+            "SELECT id, raw_json FROM entities WHERE entities MATCH ? ORDER BY rank",
+            (fts_query(target),),
+        ).fetchall()
+        results: list[dict] = []
+        seen: set[str] = set()
+        for entity_id, raw_json in rows:
+            if entity_id in seen:
+                continue
+            seen.add(entity_id)
+            entity = parse_entity(raw_json)
+            if entity:
+                results.append(entity)
+        return results
+    except _sq.DatabaseError:
+        return []
+    finally:
+        con.close()
+
+
 def os_web_url(dataset_name: str, target: str) -> str:
     """Return the OpenSanctions web search URL for a target within a dataset."""
     return f"https://www.opensanctions.org/search/?scope={dataset_name}&q={quote_plus(target)}"
@@ -413,8 +488,27 @@ def format_entity(entity: dict, target: str, dataset: Path, rg_bin: str | None,
 
 
 def search_target(target: str, dataset: Path, schema_filter: str | None,
-                  rg_bin: str | None) -> list[dict]:
+                  rg_bin: str | None, use_fts: bool = True) -> list[dict]:
     """Find all entities matching target string in the dataset."""
+    if use_fts:
+        index = ensure_index(dataset, "ftm")
+        entities = search_fts_ftm(index, target)
+
+        if schema_filter:
+            entities = [e for e in entities if e.get("schema") == schema_filter]
+
+        for entity in entities:
+            if entity.get("schema") == "CryptoWallet":
+                public_keys = [k.lower() for k in prop(entity, "publicKey")]
+                entity["_match_context"] = (
+                    "publicKey" if any(target.lower() in k for k in public_keys) else "indirect"
+                )
+            else:
+                entity["_match_context"] = "name_or_text"
+
+        return entities
+
+    # --- original grep fallback path (use_fts=False) ---
     raw_lines = grep_lines(dataset, target, rg_bin)
     entities = []
     seen_ids = set()
