@@ -131,6 +131,67 @@ def search_fts_names(index: Path, target: str) -> list[str]:
         con.close()
 
 
+def build_csv_index(source: Path, index: Path) -> None:
+    """Build FTS5 index for a targets.simple.csv file."""
+    import sqlite3 as _sq
+    con = _sq.connect(index)
+    con.execute("DROP TABLE IF EXISTS entities")
+    con.execute("""
+        CREATE VIRTUAL TABLE entities USING fts5(
+            id          UNINDEXED,
+            caption,
+            aliases,
+            identifiers,
+            raw_row     UNINDEXED,
+            tokenize    = 'unicode61'
+        )
+    """)
+    with open(source, encoding="utf-8", errors="replace", newline="") as fh:
+        reader = csv.DictReader(fh)
+        batch = []
+        for row in reader:
+            batch.append((
+                row.get("id", ""),
+                row.get("caption", ""),
+                row.get("aliases", ""),
+                row.get("identifiers", ""),
+                json.dumps(dict(row)),
+            ))
+            if len(batch) >= 1000:
+                con.executemany("INSERT INTO entities VALUES (?,?,?,?,?)", batch)
+                batch = []
+    if batch:
+        con.executemany("INSERT INTO entities VALUES (?,?,?,?,?)", batch)
+    con.commit()
+    con.close()
+
+
+def search_fts_csv(index: Path, target: str) -> list[dict]:
+    """Search the CSV FTS5 index. Returns list of row dicts."""
+    import sqlite3 as _sq
+    con = _sq.connect(index)
+    try:
+        rows = con.execute(
+            "SELECT id, raw_row FROM entities WHERE entities MATCH ? ORDER BY rank",
+            (fts_query(target),),
+        ).fetchall()
+        results: list[dict] = []
+        seen: set[str] = set()
+        for entity_id, raw in rows:
+            if entity_id in seen:
+                continue
+            seen.add(entity_id)
+            try:
+                results.append(json.loads(raw))
+            except json.JSONDecodeError:
+                continue
+        return results
+    except _sq.DatabaseError:
+        return []
+    finally:
+        con.close()
+
+
 def os_web_url(dataset_name: str, target: str) -> str:
     """Return the OpenSanctions web search URL for a target within a dataset."""
     return f"https://www.opensanctions.org/search/?scope={dataset_name}&q={quote_plus(target)}"
@@ -155,12 +216,18 @@ def search_names_txt(path: Path, targets: list[str], rg_bin: str | None,
     return results
 
 
-def search_csv(path: Path, targets: list[str], rg_bin: str | None) -> dict[str, list[dict]]:
+def search_csv(path: Path, targets: list[str], rg_bin: str | None,
+               use_fts: bool = True) -> dict[str, list[dict]]:
     """Search targets.simple.csv for each target. Returns {target: [row_dicts]}.
 
-    Uses rg/grep for fast pre-filtering, then parses matching lines with csv.DictReader.
-    Missing columns are returned as empty strings (DictReader restval default).
+    use_fts=True (default): FTS5 index.
+    use_fts=False: original grep/csv path.
     """
+    if use_fts:
+        index = ensure_index(path, "csv")
+        return {target: search_fts_csv(index, target) for target in targets}
+
+    # --- original grep/csv fallback path ---
     results: dict[str, list[dict]] = {t: [] for t in targets}
     seen_ids: set[str] = set()
 

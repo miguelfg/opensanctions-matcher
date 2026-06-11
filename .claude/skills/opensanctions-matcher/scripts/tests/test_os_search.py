@@ -325,3 +325,54 @@ def test_search_names_txt_no_fts_substring(tmp_path):
     source.write_text("Alexei Navalny\nGazprom\n")
     result = search_names_txt(source, ["Nav"], rg_bin=None, use_fts=False)
     assert len(result["Nav"]) == 1  # substring "Nav" inside "Navalny"
+
+
+import sqlite3 as _sqlite3_test
+from os_search import build_csv_index, search_fts_csv
+
+
+def test_build_csv_index_creates_db(tmp_path):
+    source = tmp_path / "targets.simple.csv"
+    source.write_text(
+        "id,caption,schema,name,aliases,identifiers,sanctions,dataset,topics,first_seen,last_seen\n"
+        "Q123,Alexei Navalny,Person,Alexei Navalny,Navalny,,EU FSF,eu_fsf,sanction,2022-03-01,2026-05-06\n"
+    )
+    index = tmp_path / "targets.simple.csv.fts5.db"
+    build_csv_index(source, index)
+    assert index.exists()
+    con = _sqlite3_test.connect(index)
+    rows = con.execute("SELECT id, caption FROM entities").fetchall()
+    con.close()
+    assert rows[0] == ("Q123", "Alexei Navalny")
+
+
+def test_search_fts_csv_hit(simple_csv):
+    idx = get_index_path(simple_csv)
+    build_csv_index(simple_csv, idx)
+    results = search_fts_csv(idx, "Navalny")
+    assert len(results) == 1
+    assert results[0]["id"] == "Q125"
+    assert results[0]["schema"] == "Person"
+
+
+def test_search_fts_csv_miss(simple_csv):
+    idx = get_index_path(simple_csv)
+    build_csv_index(simple_csv, idx)
+    assert search_fts_csv(idx, "NonexistentEntity99999") == []
+
+
+def test_search_fts_csv_deduplicates(simple_csv):
+    idx = get_index_path(simple_csv)
+    build_csv_index(simple_csv, idx)
+    results = search_fts_csv(idx, "TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy")
+    assert [r["id"] for r in results].count("Q123") == 1
+
+
+def test_search_csv_uses_fts_by_default(simple_csv):
+    result = search_csv(simple_csv, ["Navalny"], rg_bin=None, use_fts=True)
+    assert result["Navalny"][0]["id"] == "Q125"
+
+
+def test_search_csv_no_fts_fallback(simple_csv):
+    result = search_csv(simple_csv, ["Navalny"], rg_bin=None, use_fts=False)
+    assert result["Navalny"][0]["id"] == "Q125"
