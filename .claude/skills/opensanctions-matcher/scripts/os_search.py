@@ -125,7 +125,7 @@ def search_fts_names(index: Path, target: str) -> list[str]:
             (fts_query(target),),
         ).fetchall()
         return [r[0] for r in rows]
-    except _sq.OperationalError:
+    except _sq.DatabaseError:
         return []
     finally:
         con.close()
