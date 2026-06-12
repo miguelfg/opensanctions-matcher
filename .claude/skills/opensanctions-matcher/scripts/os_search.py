@@ -91,6 +91,7 @@ def build_names_index(source: Path, index: Path) -> None:
     raw = source.read_text(encoding="utf-8", errors="replace").splitlines()
     lines = [l for l in raw if l.strip() and not l.strip().startswith("#")]
     con = _sq.connect(index)
+    con.execute("DROP TABLE IF EXISTS names")
     con.execute("CREATE VIRTUAL TABLE names USING fts5(name, tokenize='unicode61')")
     con.executemany("INSERT INTO names(name) VALUES (?)", [(l,) for l in lines])
     con.commit()
@@ -618,7 +619,12 @@ def search_target(target: str, dataset: Path, schema_filter: str | None,
     return entities
 
 
+_ALLOWED_FTS_TABLES = frozenset({"names", "entities"})
+
+
 def _check_large_dataset(index: Path, table: str) -> None:
+    if table not in _ALLOWED_FTS_TABLES:
+        return
     import sqlite3 as _sq
     try:
         con = _sq.connect(index)
@@ -697,6 +703,8 @@ def main():
 
     rg_bin = find_rg()
     use_fts = not args.no_fts
+    if args.no_fts and getattr(args, "fuzzy", None) is not None:
+        print("[warn] --fuzzy is ignored when --no-fts is active", file=sys.stderr)
     fuzzy_threshold: int | None = None if args.no_fts else args.fuzzy
     search_tool = f"ripgrep ({rg_bin})" if rg_bin else "grep"
     dataset_name = dataset_dir.name
