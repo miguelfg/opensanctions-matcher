@@ -1,6 +1,6 @@
-# opensanctions-matcher
+# Opensanctions Matcher AI Skill
 
-An **AI skill** for Claude Code that screens targets against [OpenSanctions](https://www.opensanctions.org/) bulk datasets — no API key, no network calls at search time. Integrates with Claude Code, Codex, and Gemini to automatically classify target types, manage local dataset caches, and return structured results with full FtM entity context.
+An **AI skill** that screens targets against [OpenSanctions](https://www.opensanctions.org/) bulk datasets — no API key, no network calls at search time. Works with Claude Code, Codex, and Gemini to automatically identify the kind of target you want to match against, download the right OpenSanctions dataset, create a searchable index, and run your batch searches against it with full FtM entity context.
 
 Under the hood: SQLite FTS5 full-text search (default) + optional rapidfuzz approximate matching for transliterations and typos.
 
@@ -174,11 +174,11 @@ The `SKILL.md` metadata file defines:
 - Result interpretation rules
 
 When triggered, the skill:
-1. **Classifies target type** — wallet address, person name, company, vessel, etc.
-2. **Selects dataset** — narrows to the most relevant OpenSanctions dataset
-3. **Manages cache** — checks `~/.local/share/opensanctions/` for local copies
-4. **Offers download** — shows file size and asks user before downloading
-5. **Runs search** — calls the bundled `scripts/os_search.py`
+1. **Identifies target type** — analyzes what you're searching for (wallet address, person name, company, vessel, etc.)
+2. **Selects dataset** — downloads the right OpenSanctions dataset for that target type
+3. **Creates search index** — builds a SQLite FTS5 index for fast searching
+4. **Runs batch search** — searches all your targets against the indexed dataset
+5. **Manages cache** — reuses indexes if already built, checks staleness
 6. **Interprets results** — formats output with FtM schema, risk tags, holder lookup
 
 ### Search Technology
