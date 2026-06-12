@@ -1,5 +1,6 @@
 ---
 name: opensanctions-matcher
+version: 1.0.0
 description: "Cross-check one or more targets (crypto wallet addresses, person names,
   companies, vessels, IBANs) against OpenSanctions bulk datasets downloaded locally.
   Automatically selects the most relevant dataset for the target type, interactively
