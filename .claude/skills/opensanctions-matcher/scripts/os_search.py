@@ -336,10 +336,11 @@ def search_fuzzy(
                     results.append(entity)
             return results
 
+        else:
+            raise ValueError(f"Unknown file_type: {file_type}")
+
     finally:
         con.close()
-
-    return []
 
 
 def os_web_url(dataset_name: str, target: str) -> str:

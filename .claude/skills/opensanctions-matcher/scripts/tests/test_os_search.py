@@ -485,6 +485,14 @@ def test_search_fuzzy_csv_finds_approximate(simple_csv):
     assert any("Navalny" in r.get("caption", "") for r in results)
 
 
+def test_search_fuzzy_ftm_finds_approximate(ftm_json):
+    idx = ensure_index(ftm_json, "ftm")
+    results = search_fuzzy(idx, "Aleksei Navalnyy", threshold=70,
+                           file_type="ftm", existing_ids=set())
+    assert any("Navalny" in r.get("caption", "") for r in results)
+    assert all("_fuzzy_score" in r for r in results)
+
+
 def test_search_fuzzy_missing_rapidfuzz(tmp_path, monkeypatch, capsys):
     import builtins
     real_import = builtins.__import__
