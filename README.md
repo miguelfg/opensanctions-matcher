@@ -1,19 +1,44 @@
 # opensanctions-matcher
 
-A local CLI tool to screen targets against [OpenSanctions](https://www.opensanctions.org/) bulk datasets — no API key, no network call at search time. Uses SQLite FTS5 as the default search engine for ranked, token-aware results, with optional rapidfuzz approximate matching for transliterations and typos.
+An **AI skill** for Claude Code that screens targets against [OpenSanctions](https://www.opensanctions.org/) bulk datasets — no API key, no network calls at search time. Integrates with Claude Code, Codex, and Gemini to automatically classify target types, manage local dataset caches, and return structured results with full FtM entity context.
+
+Under the hood: SQLite FTS5 full-text search (default) + optional rapidfuzz approximate matching for transliterations and typos.
 
 ---
 
 ## Quick Start
 
+### In Claude Code:
+
+Simply ask a natural language question — the skill auto-triggers:
+
+```
+Is this Bitcoin address sanctioned? 1A1z7agoat2YMRJVAFF2MUJx2aQBC2z1M
+```
+
+Or explicitly invoke:
+
+```
+/opensanctions-matcher --targets "1A1z7agoat2YMRJVAFF2MUJx2aQBC2z1M" --dataset il_mod_crypto
+```
+
+The skill will:
+1. Classify the target type (crypto wallet, person, company, etc.)
+2. Check your local OpenSanctions cache (`~/.local/share/opensanctions/`)
+3. Offer to download fresh data if not cached
+4. Run a two-phase search: names first, then enriched CSV/JSON if available
+5. Return structured results with FtM entity context
+
+### Standalone CLI (advanced):
+
 ```bash
 pip install rapidfuzz          # optional, required for --fuzzy
-python3 scripts/os_search.py \
+python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
     --dataset-dir ~/.local/share/opensanctions/il_mod_crypto \
     --targets "TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy"
 ```
 
-On first run an FTS5 index is built automatically next to the dataset file. Subsequent runs are instant.
+On first run an FTS5 index is built automatically. Subsequent runs are instant.
 
 ---
 
@@ -29,243 +54,153 @@ On first run an FTS5 index is built automatically next to the dataset file. Subs
 
 ## Installation
 
+### As a Claude Code Skill
+
+The skill installs into the shared `ai/skills/` directory for use by Claude Code, Codex, and Gemini:
+
 ```bash
 git clone https://github.com/miguelfg/opensanctions-matcher.git
 cd opensanctions-matcher
-pip install rapidfuzz          # optional
+pip install rapidfuzz          # optional, required for --fuzzy approximate matching
 ```
 
-No other install step is needed — `os_search.py` has no mandatory third-party dependencies.
+Claude Code will auto-discover the skill and make it available via `/opensanctions-matcher` command or natural language triggers.
+
+### For Standalone CLI Use
+
+After cloning, the bundled `scripts/os_search.py` can be run directly without any installation:
+
+```bash
+python3 ai/skills/opensanctions-matcher/scripts/os_search.py --help
+```
+
+No mandatory third-party dependencies — `sqlite3` is in Python's stdlib.
 
 ---
 
-## Usage
+## Usage in Claude Code
 
-### Names-first two-phase search (default)
+The skill automatically triggers on these natural language prompts:
 
-Searches `names.txt` first. Any hits are automatically enriched from `targets.simple.csv`.
+- "Is this address sanctioned?"
+- "Check if X is on any sanctions lists"
+- "Screen this wallet against ransomware trackers"
+- "Is this person a known PEP?"
+- "Cross-check against OpenSanctions"
+- "OFAC check for..."
 
-```bash
-python3 scripts/os_search.py \
-    --dataset-dir /path/to/dataset \
-    --targets "Alexei Navalny" "Gazprom"
-```
+And responds with:
+1. **Automatic dataset selection** — picks the most relevant dataset(s) based on target type
+2. **Cache management** — checks local files, offers to download if missing
+3. **Two-phase search** — names + enriched CSV/JSON for full entity context
+4. **Structured output** — FtM schema interpretation with risk tags, holder lookup, date ranges
 
-### Search a specific file type
-
-```bash
-# Search the simple CSV directly
-python3 scripts/os_search.py --dataset-dir /path/to/dataset \
-    --file csv --targets "Hamas Finance Committee"
-
-# Search the full FtM JSON
-python3 scripts/os_search.py --dataset-dir /path/to/dataset \
-    --file ftm --targets "Vladimir Putin" --schema Person
-```
-
-### Fuzzy matching
-
-Runs after FTS5 and surfaces approximate hits FTS5 missed (transliterations, typos, OCR noise).
-
-```bash
-# Default threshold 80
-python3 scripts/os_search.py --dataset-dir /path/to/dataset \
-    --targets "Aleksei Navalnyy" --fuzzy
-
-# Custom threshold (0–100)
-python3 scripts/os_search.py --dataset-dir /path/to/dataset \
-    --targets "Aleksei Navalnyy" --fuzzy 65
-```
-
-### Targets from a file
-
-```bash
-python3 scripts/os_search.py --dataset-dir /path/to/dataset \
-    --targets-file wallets.txt
-```
-
-### Flag reference
-
-| Flag | Default | Description |
-|---|---|---|
-| `--dataset-dir DIR` | — | Directory containing the dataset files |
-| `--dataset PATH` | — | Path to `entities.ftm.json` (legacy, implies `--file ftm`) |
-| `--file {names,csv,ftm}` | `names` | Which dataset file to search |
-| `--targets TARGET [...]` | — | One or more target strings |
-| `--targets-file FILE` | — | File with one target per line |
-| `--schema SCHEMA` | — | Filter by FtM schema (`--file ftm` only) |
-| `--fuzzy [THRESHOLD]` | disabled | Enable fuzzy matching; threshold defaults to `80` |
-| `--no-fts` | off | Disable FTS5 index; use original grep/substring search |
-| `--no-holder-lookup` | off | Skip holder entity lookups (`--file ftm` only) |
+The skill handles everything automatically. Just ask a question.
 
 ---
 
-## Usage Examples
-
-Each example shows two ways to invoke the skill:
-
-1. **General Prompt** — Natural language that triggers the skill in Claude/Codex
-2. **Skill-Specific Prompt** — Explicit `/opensanctions-matcher` command with parameters
+## Examples
 
 ### 1. Crypto Wallet Sanctions Check
-
-**General Prompt:**
-> "Is this Bitcoin address sanctioned? 1A1z7agoat2YMRJVAFF2MUJx2aQBC2z1M"
-
-**Skill-Specific Prompt:**
 ```
-/opensanctions-matcher --targets "1A1z7agoat2YMRJVAFF2MUJx2aQBC2z1M" --dataset il_mod_crypto
+Is this Bitcoin address sanctioned? 1A1z7agoat2YMRJVAFF2MUJx2aQBC2z1M
 ```
-
-**Executes:**
-```bash
-python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/il_mod_crypto \
-    --targets "1A1z7agoat2YMRJVAFF2MUJx2aQBC2z1M"
-```
-
----
+→ Detects wallet address, searches `il_mod_crypto` and `ransomwhere` datasets, returns holder info.
 
 ### 2. OFAC Person Lookup
-
-**General Prompt:**
-> "Check if Vladimir Putin appears on any OFAC sanctions lists."
-
-**Skill-Specific Prompt:**
 ```
-/opensanctions-matcher --targets "Vladimir Putin" --dataset us_ofac_sdn --file csv
+Check if Vladimir Putin appears on any OFAC sanctions lists.
 ```
+→ Detects person name, searches `us_ofac_sdn`, returns schema, topics, date range.
 
-**Executes:**
-```bash
-python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/us_ofac_sdn \
-    --targets "Vladimir Putin" --file csv
+### 3. Batch Address Screening
 ```
-
----
-
-### 3. Batch Wallet Screening
-
-**General Prompt:**
-> "Cross-check these three Ethereum addresses against ransomware trackers: 0x123abc..., 0x456def..., 0x789ghi..."
-
-**Skill-Specific Prompt:**
+Cross-check these three Ethereum addresses: 0x123abc..., 0x456def..., 0x789ghi...
 ```
-/opensanctions-matcher --targets "0x123abc..." "0x456def..." "0x789ghi..." --dataset ransomwhere
+→ Detects multiple wallet addresses, screens each, deduplicates results.
+
+### 4. PEP Verification
 ```
-
-**Executes:**
-```bash
-python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/ransomwhere \
-    --targets "0x123abc..." "0x456def..." "0x789ghi..."
+Is Alina Kabaeva a known PEP?
 ```
+→ Detects person, searches `peps` dataset, filters by `Person` schema.
 
----
-
-### 4. Politically Exposed Person (PEP) Verification
-
-**General Prompt:**
-> "Is Alina Kabaeva a known PEP? Screen against international registers."
-
-**Skill-Specific Prompt:**
+### 5. Fuzzy Matching for Typos
 ```
-/opensanctions-matcher --targets "Alina Kabaeva" --dataset peps --file ftm --schema Person
+Check if "Aleksei Navalnyy" (with typo) is sanctioned. Allow for spelling variations.
 ```
+→ FTS5 finds "Alexei Navalny", fuzzy matching catches the typo variant.
 
-**Executes:**
-```bash
-python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/peps \
-    --targets "Alina Kabaeva" --file ftm --schema Person
-```
+## Standalone CLI Usage
 
----
-
-### 5. Company Debarment Check
-
-**General Prompt:**
-> "Screen this contractor against US government debarment lists: Rostec State Corporation"
-
-**Skill-Specific Prompt:**
-```
-/opensanctions-matcher --targets "Rostec State Corporation" --dataset debarment --file csv
-```
-
-**Executes:**
-```bash
-python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/debarment \
-    --targets "Rostec State Corporation" --file csv
-```
-
----
-
-### 6. Vessel/Maritime Screening
-
-**General Prompt:**
-> "Is the cargo ship 'Chong Chon Gang' on any UN maritime blocklists?"
-
-**Skill-Specific Prompt:**
-```
-/opensanctions-matcher --targets "Chong Chon Gang" --dataset un_1718_vessels --file ftm --schema Vessel
-```
-
-**Executes:**
-```bash
-python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/un_1718_vessels \
-    --targets "Chong Chon Gang" --file ftm --schema Vessel
-```
-
----
-
-### 7. Ransomware Address with Fuzzy Matching
-
-**General Prompt:**
-> "Check if this wallet address appears in ransomware payment logs (allow for typos): bc1qxyz987..."
-
-**Skill-Specific Prompt:**
-```
-/opensanctions-matcher --targets "bc1qxyz987..." --dataset ransomwhere --fuzzy 80
-```
-
-**Executes:**
-```bash
-python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/ransomwhere \
-    --targets "bc1qxyz987..." --fuzzy 80
-```
-
----
-
-### 8. Comprehensive Multi-Target Sanctions Sweep
-
-**General Prompt:**
-> "Cross-check these identifiers against all sanctions lists: person 'Alexei Navalny', company 'Gazprom', wallet '0xabcd1234'"
-
-**Skill-Specific Prompt:**
-```
-/opensanctions-matcher --targets "Alexei Navalny" "Gazprom" "0xabcd1234" --dataset sanctions --fuzzy 75
-```
-
-**Executes:**
-```bash
-python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/sanctions \
-    --targets "Alexei Navalny" "Gazprom" "0xabcd1234" --fuzzy 75
-```
-
----
-
-## Direct CLI Usage (No AI Client)
-
-For running the script directly without Claude/Codex, ensure datasets are pre-downloaded locally:
+For advanced use without the AI client, the bundled script can be run directly:
 
 ```bash
 # Verify cached datasets
 ls ~/.local/share/opensanctions/*/names.txt
 
-# Run directly
-python3 scripts/os_search.py \
+# Run a search
+python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
     --dataset-dir ~/.local/share/opensanctions/<dataset_name> \
     --targets "TARGET"
+
+# Use fuzzy matching
+python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
+    --dataset-dir ~/.local/share/opensanctions/il_mod_crypto \
+    --targets "Vladmir Putin" --fuzzy 75
+
+# Disable FTS5, use grep fallback
+python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
+    --dataset-dir ~/.local/share/opensanctions/il_mod_crypto \
+    --targets "Putin" --no-fts
 ```
 
-See [OpenSanctions Dataset Catalogue](https://www.opensanctions.org/browse/) to select the right dataset for your target type.
+See [OpenSanctions Dataset Catalogue](https://www.opensanctions.org/browse/) to find the right dataset for your target type.
+
+---
+
+## Architecture
+
+### Skill Integration
+
+The skill is deployed to `ai/skills/opensanctions-matcher/` and automatically discovered by:
+- **Claude Code** — via `.claude/skills/` symlink
+- **Codex** — via `.codex/skills/` symlink  
+- **Gemini** — via `.gemini/skills/` symlink
+
+The `SKILL.md` metadata file defines:
+- Trigger phrases (e.g., "check sanctions", "is this wallet sanctioned")
+- Workflow steps (dataset selection → cache check → download → search)
+- Result interpretation rules
+
+When triggered, the skill:
+1. **Classifies target type** — wallet address, person name, company, vessel, etc.
+2. **Selects dataset** — narrows to the most relevant OpenSanctions dataset
+3. **Manages cache** — checks `~/.local/share/opensanctions/` for local copies
+4. **Offers download** — shows file size and asks user before downloading
+5. **Runs search** — calls the bundled `scripts/os_search.py`
+6. **Interprets results** — formats output with FtM schema, risk tags, holder lookup
+
+### Search Technology
+
+The bundled script (`scripts/os_search.py`) implements a two-layer search:
+
+**Layer 1: SQLite FTS5 (Full-Text Search)**
+- Default search engine — ranked, token-aware
+- Separate `.fts5.db` index per dataset file
+- Transparent index build on first run, auto-rebuild when source is newer
+- `unicode61` tokenizer for accent-folding, case-insensitivity
+
+**Layer 2: Rapidfuzz Approximate Matching (optional)**
+- Activates with `--fuzzy [THRESHOLD]` flag
+- Runs after FTS5 to find near-misses (transliterations, typos, OCR noise)
+- Uses WRatio scorer, deduplicates against FTS5 hits
+- Performance warning on large datasets (>500k entries)
+
+**Fallback: Grep/Substring (optional)**
+- Activates with `--no-fts` flag
+- Restores original case-insensitive substring search
+- Useful when FTS5 is unavailable or for debugging
 
 ---
 
@@ -329,6 +264,35 @@ Exit code `0` when at least one match is found; `2` when no matches.
 
 ---
 
-## License
+## Project Structure
 
-See [LICENSE](LICENSE).
+```
+opensanctions-matcher/
+├── README.md                           # This file
+├── ai/skills/opensanctions-matcher/    # Shared skill directory
+│   ├── SKILL.md                        # Skill metadata & workflow
+│   ├── scripts/
+│   │   ├── os_search.py                # Main search implementation (FTS5 + fuzzy)
+│   │   └── tests/
+│   │       ├── test_os_search.py       # 63 unit & integration tests
+│   │       └── conftest.py             # Pytest fixtures
+│   ├── docs/
+│   │   ├── superpowers/plans/          # Implementation plans
+│   │   └── superpowers/specs/          # Design documents
+│   └── references/
+│       ├── datasets.md                 # OpenSanctions dataset catalogue
+│       └── ftm-schema.md               # FtM entity types & properties
+├── .claude/skills -> ai/skills         # Claude Code symlink
+├── .codex/skills -> ai/skills          # Codex symlink
+└── .gemini/skills -> ai/skills         # Gemini symlink
+```
+
+## License & Attribution
+
+**This skill:**
+- Licensed under your choice (see [LICENSE](LICENSE))
+- Uses OpenSanctions bulk data (free for non-commercial use)
+- OpenSanctions data is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- Commercial use of OpenSanctions data requires a data license
+
+See [OpenSanctions Licensing](https://www.opensanctions.org/) for details.
