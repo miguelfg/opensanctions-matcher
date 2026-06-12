@@ -1,0 +1,6 @@
+# OpenSanctions names fixture — for tests only
+TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy
+bc1qsanctionedaddress123456789abcdef
+0xDeAdBeEfDeAdBeEfDeAdBeEfDeAdBeEf00000001
+Alexei Navalny
+Hamas Finance Committee
