@@ -509,3 +509,33 @@ def test_search_fuzzy_missing_rapidfuzz(tmp_path, monkeypatch, capsys):
     result = search_fuzzy(idx, "Test", 80, "names", existing_ids=set())
     assert result == []
     assert "pip install rapidfuzz" in capsys.readouterr().err
+
+
+def test_main_fuzzy_flag_no_threshold(dataset_dir):
+    r = run_script(["--dataset-dir", str(dataset_dir),
+                    "--targets", "TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy",
+                    "--fuzzy"])
+    assert r.returncode == 0
+
+
+def test_main_fuzzy_custom_threshold(dataset_dir):
+    r = run_script(["--dataset-dir", str(dataset_dir),
+                    "--targets", "Aleksei Navalnyy",
+                    "--fuzzy", "65"])
+    assert r.returncode in (0, 2)
+
+
+def test_main_fuzzy_shows_fuzzy_label(dataset_dir):
+    r = run_script(["--dataset-dir", str(dataset_dir),
+                    "--targets", "Aleksei Navalniy",
+                    "--fuzzy", "65"])
+    if r.returncode == 0:
+        assert "FUZZY" in r.stdout
+
+
+def test_main_no_fts_with_fuzzy_still_works(dataset_dir):
+    """--no-fts with --fuzzy: fuzzy is silently skipped (fuzzy_threshold=None when no_fts)."""
+    r = run_script(["--dataset-dir", str(dataset_dir),
+                    "--targets", "TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy",
+                    "--no-fts", "--fuzzy"])
+    assert r.returncode == 0

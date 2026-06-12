@@ -618,6 +618,21 @@ def search_target(target: str, dataset: Path, schema_filter: str | None,
     return entities
 
 
+def _check_large_dataset(index: Path, table: str) -> None:
+    import sqlite3 as _sq
+    try:
+        con = _sq.connect(index)
+        count = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        con.close()
+        if count > 500_000:
+            print(
+                f"[warn] Fuzzy scan on large dataset ({count:,} entries) — this may take a moment",
+                file=sys.stderr,
+            )
+    except Exception:
+        pass
+
+
 def main():
     parser = argparse.ArgumentParser(description="Search OpenSanctions entities")
     parser.add_argument("--dataset",
@@ -638,6 +653,10 @@ def main():
         "--no-fts",
         action="store_true",
         help="Disable FTS5 index; use original grep/substring search",
+    )
+    parser.add_argument(
+        "--fuzzy", nargs="?", const=80, type=int, metavar="THRESHOLD",
+        help="Enable fuzzy matching via rapidfuzz WRatio (default threshold: 80)",
     )
     args = parser.parse_args()
 
@@ -678,6 +697,7 @@ def main():
 
     rg_bin = find_rg()
     use_fts = not args.no_fts
+    fuzzy_threshold: int | None = None if args.no_fts else args.fuzzy
     search_tool = f"ripgrep ({rg_bin})" if rg_bin else "grep"
     dataset_name = dataset_dir.name
 
@@ -693,20 +713,34 @@ def main():
 
     total_hits = 0
 
-    # ── FtM path (unchanged) ──────────────────────────────────────────────────
+    # ── FtM path ──────────────────────────────────────────────────────────────
     if args.file == "ftm":
         for target in targets:
             print(f"── Searching: {target}")
             matches = search_target(target, active_file, args.schema, rg_bin, use_fts=use_fts)
-            if not matches:
+            fts_ids = {e.get("id", "") for e in matches}
+
+            fuzzy_extras: list[dict] = []
+            if fuzzy_threshold is not None:
+                idx = get_index_path(active_file)
+                if idx.exists():
+                    _check_large_dataset(idx, "entities")
+                    fuzzy_extras = search_fuzzy(idx, target, fuzzy_threshold,
+                                                "ftm", existing_ids=fts_ids)
+
+            all_matches = matches + fuzzy_extras
+            if not all_matches:
                 print(f"  ❌ NO MATCH\n")
                 continue
-            total_hits += len(matches)
-            print(f"  ✅ {len(matches)} match(es) found\n")
-            for i, entity in enumerate(matches, 1):
+            total_hits += len(all_matches)
+            print(f"  ✅ {len(all_matches)} match(es) found\n")
+            for i, entity in enumerate(all_matches, 1):
                 ctx = entity.pop("_match_context", "")
+                score = entity.pop("_fuzzy_score", None)
                 ctx_note = f" [matched in: {ctx}]" if ctx == "indirect" else ""
-                print(f"  Match {i}{ctx_note}:")
+                label = (f"  ⚠️  Fuzzy Match {i} (score: {score}){ctx_note}:"
+                         if score else f"  Match {i}{ctx_note}:")
+                print(label)
                 print(format_entity(entity, target, active_file, rg_bin,
                                     lookup_holders=not args.no_holder_lookup))
                 print()
@@ -716,13 +750,26 @@ def main():
         csv_results = search_csv(active_file, targets, rg_bin, use_fts=use_fts)
         for target, rows in csv_results.items():
             print(f"── Searching: {target}")
-            if not rows:
+            fts_ids = {r.get("id", "") for r in rows}
+
+            fuzzy_extras: list[dict] = []
+            if fuzzy_threshold is not None:
+                idx = get_index_path(active_file)
+                if idx.exists():
+                    _check_large_dataset(idx, "entities")
+                    fuzzy_extras = search_fuzzy(idx, target, fuzzy_threshold,
+                                                "csv", existing_ids=fts_ids)
+
+            all_rows = rows + fuzzy_extras
+            if not all_rows:
                 print(f"  ❌ NO MATCH\n")
                 continue
-            total_hits += len(rows)
-            print(f"  ✅ {len(rows)} match(es) found\n")
-            for i, row in enumerate(rows, 1):
-                print(f"  Match {i}:")
+            total_hits += len(all_rows)
+            print(f"  ✅ {len(all_rows)} match(es) found\n")
+            for i, row in enumerate(all_rows, 1):
+                score = row.pop("_fuzzy_score", None)
+                label = f"  ⚠️  Fuzzy Match {i} (score: {score}):" if score else f"  Match {i}:"
+                print(label)
                 print(format_csv_entity(row, dataset_name))
                 print(f"  Web URL   : {os_web_url(dataset_name, target)}")
                 print()
@@ -730,20 +777,41 @@ def main():
     # ── Names-first two-phase path (default) ─────────────────────────────────
     else:
         names_results = search_names_txt(active_file, targets, rg_bin, use_fts=use_fts)
-        hit_targets = [t for t, lines in names_results.items() if lines]
+        if fuzzy_threshold is not None:
+            idx = get_index_path(active_file)
+            if idx.exists():
+                _check_large_dataset(idx, "names")
 
+        hit_targets = []
         for target, matched_lines in names_results.items():
             print(f"── Searching: {target}")
-            if not matched_lines:
+            fts_hit_set = set(matched_lines)
+
+            fuzzy_name_hits: list[dict] = []
+            if fuzzy_threshold is not None:
+                idx = get_index_path(active_file)
+                if idx.exists():
+                    fuzzy_name_hits = search_fuzzy(idx, target, fuzzy_threshold,
+                                                   "names", existing_ids=fts_hit_set)
+
+            if not matched_lines and not fuzzy_name_hits:
                 print(f"  ❌ NO MATCH in names.txt")
                 print(f"  Tip: rerun with --file ftm for full FtM detail")
                 print()
                 continue
-            total_hits += len(matched_lines)
-            match_label = "NAMES MATCH" if args.no_fts else "FTS MATCH"
-            print(f"  ✅ {match_label} ({len(matched_lines)} line(s))")
-            for line in matched_lines:
-                print(f"  Matched : {line}")
+
+            total_hits += len(matched_lines) + len(fuzzy_name_hits)
+
+            if matched_lines:
+                match_label = "NAMES MATCH" if args.no_fts else "FTS MATCH"
+                print(f"  ✅ {match_label} ({len(matched_lines)} line(s))")
+                for line in matched_lines:
+                    print(f"  Matched : {line}")
+                hit_targets.append(target)
+
+            for hit in fuzzy_name_hits:
+                print(f"  ⚠️  FUZZY MATCH (score: {hit['_fuzzy_score']}) — {hit['_fuzzy_match']}")
+
             print(f"  Web URL : {os_web_url(dataset_name, target)}")
             print()
 
