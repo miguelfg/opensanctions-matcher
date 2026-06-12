@@ -100,6 +100,175 @@ python3 scripts/os_search.py --dataset-dir /path/to/dataset \
 
 ---
 
+## Usage Examples
+
+Each example shows two ways to invoke the skill:
+
+1. **General Prompt** — Natural language that triggers the skill in Claude/Codex
+2. **Skill-Specific Prompt** — Explicit `/opensanctions-matcher` command with parameters
+
+### 1. Crypto Wallet Sanctions Check
+
+**General Prompt:**
+> "Is this Bitcoin address sanctioned? 1A1z7agoat2YMRJVAFF2MUJx2aQBC2z1M"
+
+**Skill-Specific Prompt:**
+```
+/opensanctions-matcher --targets "1A1z7agoat2YMRJVAFF2MUJx2aQBC2z1M" --dataset il_mod_crypto
+```
+
+**Executes:**
+```bash
+python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/il_mod_crypto \
+    --targets "1A1z7agoat2YMRJVAFF2MUJx2aQBC2z1M"
+```
+
+---
+
+### 2. OFAC Person Lookup
+
+**General Prompt:**
+> "Check if Vladimir Putin appears on any OFAC sanctions lists."
+
+**Skill-Specific Prompt:**
+```
+/opensanctions-matcher --targets "Vladimir Putin" --dataset us_ofac_sdn --file csv
+```
+
+**Executes:**
+```bash
+python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/us_ofac_sdn \
+    --targets "Vladimir Putin" --file csv
+```
+
+---
+
+### 3. Batch Wallet Screening
+
+**General Prompt:**
+> "Cross-check these three Ethereum addresses against ransomware trackers: 0x123abc..., 0x456def..., 0x789ghi..."
+
+**Skill-Specific Prompt:**
+```
+/opensanctions-matcher --targets "0x123abc..." "0x456def..." "0x789ghi..." --dataset ransomwhere
+```
+
+**Executes:**
+```bash
+python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/ransomwhere \
+    --targets "0x123abc..." "0x456def..." "0x789ghi..."
+```
+
+---
+
+### 4. Politically Exposed Person (PEP) Verification
+
+**General Prompt:**
+> "Is Alina Kabaeva a known PEP? Screen against international registers."
+
+**Skill-Specific Prompt:**
+```
+/opensanctions-matcher --targets "Alina Kabaeva" --dataset peps --file ftm --schema Person
+```
+
+**Executes:**
+```bash
+python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/peps \
+    --targets "Alina Kabaeva" --file ftm --schema Person
+```
+
+---
+
+### 5. Company Debarment Check
+
+**General Prompt:**
+> "Screen this contractor against US government debarment lists: Rostec State Corporation"
+
+**Skill-Specific Prompt:**
+```
+/opensanctions-matcher --targets "Rostec State Corporation" --dataset debarment --file csv
+```
+
+**Executes:**
+```bash
+python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/debarment \
+    --targets "Rostec State Corporation" --file csv
+```
+
+---
+
+### 6. Vessel/Maritime Screening
+
+**General Prompt:**
+> "Is the cargo ship 'Chong Chon Gang' on any UN maritime blocklists?"
+
+**Skill-Specific Prompt:**
+```
+/opensanctions-matcher --targets "Chong Chon Gang" --dataset un_1718_vessels --file ftm --schema Vessel
+```
+
+**Executes:**
+```bash
+python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/un_1718_vessels \
+    --targets "Chong Chon Gang" --file ftm --schema Vessel
+```
+
+---
+
+### 7. Ransomware Address with Fuzzy Matching
+
+**General Prompt:**
+> "Check if this wallet address appears in ransomware payment logs (allow for typos): bc1qxyz987..."
+
+**Skill-Specific Prompt:**
+```
+/opensanctions-matcher --targets "bc1qxyz987..." --dataset ransomwhere --fuzzy 80
+```
+
+**Executes:**
+```bash
+python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/ransomwhere \
+    --targets "bc1qxyz987..." --fuzzy 80
+```
+
+---
+
+### 8. Comprehensive Multi-Target Sanctions Sweep
+
+**General Prompt:**
+> "Cross-check these identifiers against all sanctions lists: person 'Alexei Navalny', company 'Gazprom', wallet '0xabcd1234'"
+
+**Skill-Specific Prompt:**
+```
+/opensanctions-matcher --targets "Alexei Navalny" "Gazprom" "0xabcd1234" --dataset sanctions --fuzzy 75
+```
+
+**Executes:**
+```bash
+python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/sanctions \
+    --targets "Alexei Navalny" "Gazprom" "0xabcd1234" --fuzzy 75
+```
+
+---
+
+## Direct CLI Usage (No AI Client)
+
+For running the script directly without Claude/Codex, ensure datasets are pre-downloaded locally:
+
+```bash
+# Verify cached datasets
+ls ~/.local/share/opensanctions/*/names.txt
+
+# Run directly
+python3 scripts/os_search.py \
+    --dataset-dir ~/.local/share/opensanctions/<dataset_name> \
+    --targets "TARGET"
+```
+
+See [OpenSanctions Dataset Catalogue](https://www.opensanctions.org/browse/) to select the right dataset for your target type.
+
+---
+
 ## How It Works
 
 ### FTS5 index lifecycle
