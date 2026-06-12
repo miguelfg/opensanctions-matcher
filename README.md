@@ -4,6 +4,8 @@ An **AI skill** that screens targets against [OpenSanctions](https://www.opensan
 
 Under the hood: SQLite FTS5 full-text search (default) + optional rapidfuzz approximate matching for transliterations and typos.
 
+![Skill Workflow](ai/skills/opensanctions-matcher/docs/workflow_diagram.png)
+
 ---
 
 ## Quick Start
@@ -263,29 +265,6 @@ OpenSanctions Search
 Exit code `0` when at least one match is found; `2` when no matches.
 
 ---
-
-## Project Structure
-
-```
-opensanctions-matcher/
-├── README.md                           # This file
-├── ai/skills/opensanctions-matcher/    # Shared skill directory
-│   ├── SKILL.md                        # Skill metadata & workflow
-│   ├── scripts/
-│   │   ├── os_search.py                # Main search implementation (FTS5 + fuzzy)
-│   │   └── tests/
-│   │       ├── test_os_search.py       # 63 unit & integration tests
-│   │       └── conftest.py             # Pytest fixtures
-│   ├── docs/
-│   │   ├── superpowers/plans/          # Implementation plans
-│   │   └── superpowers/specs/          # Design documents
-│   └── references/
-│       ├── datasets.md                 # OpenSanctions dataset catalogue
-│       └── ftm-schema.md               # FtM entity types & properties
-├── .claude/skills -> ai/skills         # Claude Code symlink
-├── .codex/skills -> ai/skills          # Codex symlink
-└── .gemini/skills -> ai/skills         # Gemini symlink
-```
 
 ## License & Attribution
 
