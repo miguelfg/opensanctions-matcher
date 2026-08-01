@@ -27,6 +27,7 @@ make version
 make check-version
 make bump-patch    # or bump-minor / bump-major
 make bump-dry-run  # inspect the next version without changing files
+make release-patch # also prep changelog, commit, tag, and push
 ```
 
 ## Architecture

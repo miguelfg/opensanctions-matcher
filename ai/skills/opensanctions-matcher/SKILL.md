@@ -30,7 +30,7 @@ Reference files:
 
 Current skill version: `1.0.0`.
 
-Version bumps are managed from `ai/skills/opensanctions-matcher/` with `make bump-patch`, `make bump-minor`, or `make bump-major`. Those targets use `bumpversion` to update this file and `VERSION` together.
+Version bumps are managed from `ai/skills/opensanctions-matcher/` with `make bump-patch`, `make bump-minor`, or `make bump-major`. Those targets use `bumpversion` to update this file and `VERSION` together. For a full release, use `make release-patch`, `make release-minor`, or `make release-major`; those targets also prepend a changelog entry, commit, tag, and push.
 
 ---
 
