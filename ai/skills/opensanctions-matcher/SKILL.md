@@ -26,6 +26,14 @@ Reference files:
 
 ---
 
+## Versioning
+
+Current skill version: `1.0.0`.
+
+Version bumps are managed from `ai/skills/opensanctions-matcher/` with `make bump-patch`, `make bump-minor`, or `make bump-major`. Those targets use `bumpversion` to update this file and `VERSION` together.
+
+---
+
 ## Workflow
 
 ### Step 1 — Classify Target and Select Dataset

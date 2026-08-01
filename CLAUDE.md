@@ -21,6 +21,12 @@ python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/<dataset
 
 # Fall back to grep (no FTS index)
 python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/<dataset_name> --targets "TARGET" --no-fts
+
+# Versioning helpers
+make version
+make check-version
+make bump-patch    # or bump-minor / bump-major
+make bump-dry-run  # inspect the next version without changing files
 ```
 
 ## Architecture
