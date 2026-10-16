@@ -166,7 +166,8 @@ On first run the script builds a SQLite FTS5 index next to the dataset file
 Exit codes: `0` = at least one match, `2` = no matches, `1` = error (e.g. the chosen
 `--file` is not in the dataset directory — download it or pick another `--file`).
 
-Find `<skill_dir>` with: `find ~/.claude/skills ~/.local/share/claude-code/skills -name os_search.py 2>/dev/null | head -1`
+`<skill_dir>` is the directory containing this `SKILL.md`; the script is always at
+`scripts/os_search.py` relative to it, whichever agent installed the skill.
 
 ---
 
