@@ -1,0 +1,3 @@
+{"id":"Q200","schema":"CryptoWallet","caption":"0xDeAdBeEfDeAdBeEfDeAdBeEfDeAdBeEf00000001","properties":{"publicKey":["0xDeAdBeEfDeAdBeEfDeAdBeEfDeAdBeEf00000001"],"holder":["Q201"],"topics":["sanction"]},"datasets":["us_ofac_sdn"],"first_seen":"2024-01-01","last_seen":"2026-01-01"}
+{"id":"Q201","schema":"Person","caption":"Alexei Navalny","properties":{"name":["Alexei Navalny"],"alias":["Navalny","А. Навальный"],"topics":["sanction"]},"datasets":["eu_fsf"],"first_seen":"2022-03-01","last_seen":"2026-05-06"}
+{"id":"Q202","schema":"Company","caption":"Hamas Finance Committee","properties":{"name":["Hamas Finance Committee"],"alias":["HFC"],"topics":["sanction","crime.terror"]},"datasets":["us_ofac_sdn"],"first_seen":"2021-01-01","last_seen":"2026-05-01"}

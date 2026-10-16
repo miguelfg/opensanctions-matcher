@@ -1,0 +1,4 @@
+id,caption,schema,name,aliases,identifiers,sanctions,dataset,topics,first_seen,last_seen
+Q123,TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy,CryptoWallet,TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy,,TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy,OFAC SDN 2024-01-15,il_mod_crypto,sanction,2024-01-15,2026-05-01
+Q124,bc1qsanctionedaddress123456789abcdef,CryptoWallet,bc1qsanctionedaddress123456789abcdef,,bc1qsanctionedaddress123456789abcdef,FBI Lazarus 2023-11-01,us_fbi_lazarus_crypto,crime.cyber,2023-11-01,2026-04-28
+Q125,Alexei Navalny,Person,Alexei Navalny,Navalny,,EU FSF 2022-03-01,eu_fsf,sanction,2022-03-01,2026-05-06
