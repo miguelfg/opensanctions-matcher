@@ -10,6 +10,8 @@ description: "Cross-check one or more targets (crypto wallet addresses, person n
   appears on any sanctions list, ransomware tracker, PEP register, or watchlist.
   Triggers on: check sanctions, cross-check against OpenSanctions, is this wallet
   sanctioned, screen this address, OFAC check, sanctions lookup."
+license: MIT
+compatibility: "OpenSanctions data is CC BY-NC 4.0: free for non-commercial use; commercial use requires an OpenSanctions data license."
 ---
 
 # OpenSanctions Search Skill

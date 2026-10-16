@@ -274,9 +274,9 @@ Exit code `0` when at least one match is found; `2` when no matches.
 ## License & Attribution
 
 **This skill:**
-- Licensed under your choice (see [LICENSE](LICENSE))
+- Licensed under the MIT License (see [LICENSE](LICENSE))
 - Uses OpenSanctions bulk data (free for non-commercial use)
-- OpenSanctions data is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- OpenSanctions data is licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)
 - Commercial use of OpenSanctions data requires a data license
 
 See [OpenSanctions Licensing](https://www.opensanctions.org/) for details.
