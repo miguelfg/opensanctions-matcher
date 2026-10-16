@@ -117,9 +117,9 @@ Check if Vladimir Putin appears on any OFAC sanctions lists.
 
 ### 3. Batch Address Screening
 ```
-Cross-check these three Ethereum addresses: 0x123abc..., 0x456def..., 0x789ghi...
+Cross-check these Ethereum addresses: 0x0004a76e39d33edfeac7fc3c8d3994f54428a0be, 0x7d84d78bb9b6044a45fa08b7fe109f2c8648ab4e
 ```
-→ Detects multiple wallet addresses, screens each, deduplicates results.
+→ Detects multiple wallet addresses, screens each against `us_fbi_lazarus_crypto`, deduplicates results.
 
 ### 4. PEP Verification
 ```
@@ -129,9 +129,9 @@ Is Alina Kabaeva a known PEP?
 
 ### 5. Fuzzy Matching for Typos
 ```
-Check if "Aleksei Navalnyy" (with typo) is sanctioned. Allow for spelling variations.
+Check if "Vladmir Putin" (with typo) is on OFAC. Allow for spelling variations.
 ```
-→ FTS5 finds "Alexei Navalny", fuzzy matching catches the typo variant.
+→ FTS5 misses the misspelling; fuzzy matching finds "Vladimir Putin" (score 96) in `us_ofac_sdn`.
 
 ## Standalone CLI Usage
 
@@ -148,13 +148,18 @@ python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
 
 # Use fuzzy matching
 python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
-    --dataset-dir ~/.local/share/opensanctions/il_mod_crypto \
+    --dataset-dir ~/.local/share/opensanctions/us_ofac_sdn \
     --targets "Vladmir Putin" --fuzzy 75
 
 # Disable FTS5, use grep fallback
 python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
-    --dataset-dir ~/.local/share/opensanctions/il_mod_crypto \
+    --dataset-dir ~/.local/share/opensanctions/us_ofac_sdn \
     --targets "Putin" --no-fts
+
+# Search wallet addresses / identifiers in the full FtM entities file
+python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
+    --dataset-dir ~/.local/share/opensanctions/us_fbi_lazarus_crypto \
+    --targets "0x0004a76e39d33edfeac7fc3c8d3994f54428a0be" --file ftm
 ```
 
 See [OpenSanctions Dataset Catalogue](https://www.opensanctions.org/browse/) to find the right dataset for your target type.
