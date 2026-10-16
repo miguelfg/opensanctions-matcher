@@ -4,7 +4,7 @@ An **AI skill** that screens targets against [OpenSanctions](https://www.opensan
 
 Under the hood: SQLite FTS5 full-text search (default) + optional rapidfuzz approximate matching for transliterations and typos.
 
-![Skill Workflow](ai/skills/opensanctions-matcher/docs/workflow_diagram.png)
+![Skill Workflow](skills/opensanctions-matcher/docs/workflow_diagram.png)
 
 ---
 
@@ -35,7 +35,7 @@ The skill will:
 
 ```bash
 pip install rapidfuzz          # optional, required for --fuzzy
-python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
+python3 skills/opensanctions-matcher/scripts/os_search.py \
     --dataset-dir ~/.local/share/opensanctions/il_mod_crypto \
     --targets "TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy"
 ```
@@ -58,7 +58,7 @@ On first run an FTS5 index is built automatically. Subsequent runs are instant.
 
 ### As a Claude Code Skill
 
-The skill installs into the shared `ai/skills/` directory for use by Claude Code, Codex, and Gemini:
+The skill installs into the `skills/` directory for use by Claude Code, Codex, and Gemini:
 
 ```bash
 git clone https://github.com/miguelfg/opensanctions-matcher.git
@@ -73,7 +73,7 @@ Claude Code will auto-discover the skill and make it available via `/opensanctio
 After cloning, the bundled `scripts/os_search.py` can be run directly without any installation:
 
 ```bash
-python3 ai/skills/opensanctions-matcher/scripts/os_search.py --help
+python3 skills/opensanctions-matcher/scripts/os_search.py --help
 ```
 
 No mandatory third-party dependencies — `sqlite3` is in Python's stdlib.
@@ -142,22 +142,22 @@ For advanced use without the AI client, the bundled script can be run directly:
 ls ~/.local/share/opensanctions/*/names.txt
 
 # Run a search
-python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
+python3 skills/opensanctions-matcher/scripts/os_search.py \
     --dataset-dir ~/.local/share/opensanctions/<dataset_name> \
     --targets "TARGET"
 
 # Use fuzzy matching
-python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
+python3 skills/opensanctions-matcher/scripts/os_search.py \
     --dataset-dir ~/.local/share/opensanctions/us_ofac_sdn \
     --targets "Vladmir Putin" --fuzzy 75
 
 # Disable FTS5, use grep fallback
-python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
+python3 skills/opensanctions-matcher/scripts/os_search.py \
     --dataset-dir ~/.local/share/opensanctions/us_ofac_sdn \
     --targets "Putin" --no-fts
 
 # Search wallet addresses / identifiers in the full FtM entities file
-python3 ai/skills/opensanctions-matcher/scripts/os_search.py \
+python3 skills/opensanctions-matcher/scripts/os_search.py \
     --dataset-dir ~/.local/share/opensanctions/us_fbi_lazarus_crypto \
     --targets "0x0004a76e39d33edfeac7fc3c8d3994f54428a0be" --file ftm
 ```
@@ -170,7 +170,7 @@ See [OpenSanctions Dataset Catalogue](https://www.opensanctions.org/browse/) to 
 
 ### Skill Integration
 
-The skill is deployed to `ai/skills/opensanctions-matcher/` and automatically discovered by:
+The skill is deployed to `skills/opensanctions-matcher/` and automatically discovered by:
 - **Claude Code** — via `.claude/skills/` symlink
 - **Codex** — via `.codex/skills/` symlink  
 - **Gemini** — via `.gemini/skills/` symlink

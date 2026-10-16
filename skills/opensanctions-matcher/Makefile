@@ -53,7 +53,7 @@ release-major:
 	$(MAKE) release PART=major
 
 release-commit:
-	@version=$$($(MAKE) -s --no-print-directory version); git add SKILL.md VERSION CHANGELOG.md .bumpversion.cfg Makefile ../../../AGENTS.md; git commit -m "chore: release opensanctions-matcher $$version"
+	@version=$$($(MAKE) -s --no-print-directory version); git add SKILL.md VERSION CHANGELOG.md .bumpversion.cfg Makefile ../../AGENTS.md; git commit -m "chore: release opensanctions-matcher $$version"
 
 release-tag:
 	@version=$$($(MAKE) -s --no-print-directory version); git tag -a "v$$version" -m "OpenSanctions matcher $$version"

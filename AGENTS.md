@@ -4,11 +4,11 @@ This file provides guidance to AI coding agents (Claude Code, Codex, etc.) when 
 
 ## Commands
 
-All commands run from `ai/skills/opensanctions-matcher/`.
+All commands run from `skills/opensanctions-matcher/`.
 
 ```bash
 # Run full test suite
-cd ai/skills/opensanctions-matcher && python -m pytest scripts/tests/test_os_search.py -v
+cd skills/opensanctions-matcher && python -m pytest scripts/tests/test_os_search.py -v
 
 # Run a single test by name
 python -m pytest scripts/tests/test_os_search.py -k "test_search_fuzzy_names_finds_approximate" -v
@@ -32,7 +32,7 @@ make release-patch # also prep changelog, commit, tag, and push
 
 ## Architecture
 
-The skill lives entirely under `ai/skills/opensanctions-matcher/`. The only executable source is `scripts/os_search.py`; everything else is documentation or test infrastructure.
+The skill lives entirely under `skills/opensanctions-matcher/`. The only executable source is `scripts/os_search.py`; everything else is documentation or test infrastructure.
 
 ### Search pipeline
 
