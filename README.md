@@ -4,7 +4,7 @@ An **AI skill** that screens targets against [OpenSanctions](https://www.opensan
 
 Under the hood: SQLite FTS5 full-text search (default) + optional rapidfuzz approximate matching for transliterations and typos.
 
-![Skill Workflow](skills/opensanctions-matcher/docs/workflow_diagram.png)
+![Skill Workflow](docs/workflow_diagram.png)
 
 ---
 

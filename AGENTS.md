@@ -4,23 +4,23 @@ This file provides guidance to AI coding agents (Claude Code, Codex, etc.) when 
 
 ## Commands
 
-All commands run from `skills/opensanctions-matcher/`.
+All commands run from the repo root.
 
 ```bash
 # Run full test suite
-cd skills/opensanctions-matcher && python -m pytest scripts/tests/test_os_search.py -v
+python -m pytest tests/test_os_search.py -v
 
 # Run a single test by name
-python -m pytest scripts/tests/test_os_search.py -k "test_search_fuzzy_names_finds_approximate" -v
+python -m pytest tests/test_os_search.py -k "test_search_fuzzy_names_finds_approximate" -v
 
 # Run the CLI directly
-python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/<dataset_name> --targets "TARGET"
+python3 skills/opensanctions-matcher/scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/<dataset_name> --targets "TARGET"
 
 # Run with fuzzy matching
-python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/<dataset_name> --targets "NAME" --fuzzy 75
+python3 skills/opensanctions-matcher/scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/<dataset_name> --targets "NAME" --fuzzy 75
 
 # Fall back to grep (no FTS index)
-python3 scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/<dataset_name> --targets "TARGET" --no-fts
+python3 skills/opensanctions-matcher/scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/<dataset_name> --targets "TARGET" --no-fts
 
 # Versioning helpers
 make version
@@ -32,7 +32,7 @@ make release-patch # also prep changelog, commit, tag, and push
 
 ## Architecture
 
-The skill lives entirely under `skills/opensanctions-matcher/`. The only executable source is `scripts/os_search.py`; everything else is documentation or test infrastructure.
+The installable skill is `skills/opensanctions-matcher/` (`SKILL.md`, `LICENSE`, `references/`, `scripts/os_search.py`) — keep it free of maintainer files, since the whole folder is copied on install. Tests (`tests/`), docs (`docs/`), `Makefile`, `.bumpversion.cfg`, `VERSION` and `CHANGELOG.md` live at the repo root.
 
 ### Search pipeline
 
@@ -77,4 +77,4 @@ The AI skill wraps the CLI in a 6-step workflow: classify target type → check 
 - `parse_entity(line)` is the single JSON-parse entry point for FtM NDJSON lines; returns `None` on decode error
 - `prop(entity, key)` safely extracts `entity["properties"][key]` as a list
 - The `identifiers` FTS5 column indexes `publicKey`, `ibanNumber`, `registrationNumber`, `taxNumber`, `passportNumber`, `idNumber` — extend this list when new FtM property types need to be searchable
-- Test fixtures are static files in `scripts/tests/fixtures/`; `dataset_dir` fixture copies all three into a `tmp_path`
+- Test fixtures are static files in `tests/fixtures/`; `dataset_dir` fixture copies all three into a `tmp_path`

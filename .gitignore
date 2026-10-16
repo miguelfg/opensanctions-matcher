@@ -23,5 +23,5 @@ output/
 *.results.csv
 
 # Test fixtures are small static samples and must be committed
-!scripts/tests/fixtures/*
-scripts/tests/fixtures/*.fts5.db
+!tests/fixtures/*
+tests/fixtures/*.fts5.db

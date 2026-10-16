@@ -2,7 +2,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "skills" / "opensanctions-matcher" / "scripts"))
 
 from os_search import os_web_url, get_index_path, index_is_stale, fts_query, build_ftm_index, search_fts_ftm
 
@@ -97,7 +97,7 @@ import subprocess
 
 
 def run_script(args: list[str]) -> subprocess.CompletedProcess:
-    script = Path(__file__).parent.parent / "os_search.py"
+    script = Path(__file__).parent.parent / "skills" / "opensanctions-matcher" / "scripts" / "os_search.py"
     return subprocess.run(
         ["python3", str(script)] + args,
         capture_output=True, text=True
