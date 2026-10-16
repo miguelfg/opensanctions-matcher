@@ -1,6 +1,5 @@
 ---
 name: opensanctions-matcher
-version: 1.0.0
 description: "Cross-check one or more targets (crypto wallet addresses, person names,
   companies, vessels, IBANs) against OpenSanctions bulk datasets downloaded locally.
   Automatically selects the most relevant dataset for the target type, interactively
@@ -12,6 +11,8 @@ description: "Cross-check one or more targets (crypto wallet addresses, person n
   sanctioned, screen this address, OFAC check, sanctions lookup."
 license: MIT
 compatibility: "OpenSanctions data is CC BY-NC 4.0: free for non-commercial use; commercial use requires an OpenSanctions data license."
+metadata:
+  version: "1.0.0"
 ---
 
 # OpenSanctions Search Skill
@@ -25,14 +26,6 @@ a SQLite FTS5 index (with optional fuzzy matching), and structured result interp
 Reference files:
 - `references/datasets.md` — full dataset catalogue with names, descriptions, sizes
 - `references/ftm-schema.md` — FtM entity types and property definitions
-
----
-
-## Versioning
-
-Current skill version: `1.0.0`.
-
-Version bumps are managed from `ai/skills/opensanctions-matcher/` with `make bump-patch`, `make bump-minor`, or `make bump-major`. Those targets use `bumpversion` to update this file and `VERSION` together. For a full release, use `make release-patch`, `make release-minor`, or `make release-major`; those targets also prepend a changelog entry, commit, tag, and push.
 
 ---
 
