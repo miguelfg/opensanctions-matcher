@@ -22,6 +22,11 @@ python3 skills/opensanctions-matcher/scripts/os_search.py --dataset-dir ~/.local
 # Fall back to grep (no FTS index)
 python3 skills/opensanctions-matcher/scripts/os_search.py --dataset-dir ~/.local/share/opensanctions/<dataset_name> --targets "TARGET" --no-fts
 
+# Validate SKILL.md against the Agent Skills spec
+make validate
+
+# Trigger/behaviour eval prompts live in evals/evals.json
+
 # Versioning helpers
 make version
 make check-version

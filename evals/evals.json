@@ -1,0 +1,30 @@
+{
+  "skill_name": "opensanctions-matcher",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Is this Bitcoin address sanctioned? 1123pJv8jzeFQaCV4w644pzQJzVWay2zcA",
+      "expected_output": "Classifies a crypto wallet, searches ransomwhere with --file ftm, reports a MATCH (CryptoWallet, ransomware topic)."
+    },
+    {
+      "id": 2,
+      "prompt": "Cross-check these Ethereum addresses: 0x0004a76e39d33edfeac7fc3c8d3994f54428a0be, 0x7d84d78bb9b6044a45fa08b7fe109f2c8648ab4e",
+      "expected_output": "Searches us_fbi_lazarus_crypto with --file ftm and reports one MATCH per address."
+    },
+    {
+      "id": 3,
+      "prompt": "Check if Vladimir Putin appears on the OFAC sanctions list.",
+      "expected_output": "Searches us_ofac_sdn names.txt and reports an FTS MATCH for Vladimir Putin."
+    },
+    {
+      "id": 4,
+      "prompt": "Is \"Vladmir Putin\" on OFAC? It may be misspelt.",
+      "expected_output": "Exact search finds nothing; reruns with --fuzzy and reports Vladimir Putin as a fuzzy lead (score ~96) to verify, not a confirmed match."
+    },
+    {
+      "id": 5,
+      "prompt": "Screen Jane Example Doe against OpenSanctions.",
+      "expected_output": "Reports NO MATCH in the searched dataset and suggests widening to the sanctions collection; asks before any download over 200 MB."
+    }
+  ]
+}

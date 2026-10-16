@@ -3,7 +3,10 @@ BUMPVERSION := uvx --from bump2version bumpversion
 PART ?= patch
 SUMMARY ?= TODO: summarize the changes
 
-.PHONY: version check-version bump bump-patch bump-minor bump-major bump-dry-run changelog-entry release-note release-preflight release release-patch release-minor release-major release-commit release-tag release-push
+.PHONY: validate version check-version bump bump-patch bump-minor bump-major bump-dry-run changelog-entry release-note release-preflight release release-patch release-minor release-major release-commit release-tag release-push
+
+validate:
+	uvx --from skills-ref agentskills validate skills/opensanctions-matcher
 
 version:
 	@python3 -c "from pathlib import Path; import re; text = Path('skills/opensanctions-matcher/SKILL.md').read_text(encoding='utf-8'); m = re.search(r'^\\s+version:\\s*\"([0-9]+\\.[0-9]+\\.[0-9]+)\"\\s*$$', text, re.M); assert m, 'version not found in SKILL.md'; print(m.group(1))"
