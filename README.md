@@ -15,7 +15,7 @@ Under the hood: SQLite FTS5 full-text search (default) + optional rapidfuzz appr
 Simply ask a natural language question — the skill auto-triggers:
 
 ```
-Is this Bitcoin address sanctioned? 1A1z7agoat2YMRJVAFF2MUJx2aQBC2z1M
+Is this Bitcoin address sanctioned? 1123pJv8jzeFQaCV4w644pzQJzVWay2zcA
 ```
 
 Or explicitly invoke:
@@ -105,7 +105,7 @@ The skill handles everything automatically. Just ask a question.
 
 ### 1. Crypto Wallet Sanctions Check
 ```
-Is this Bitcoin address sanctioned? 1A1z7agoat2YMRJVAFF2MUJx2aQBC2z1M
+Is this Bitcoin address sanctioned? 1123pJv8jzeFQaCV4w644pzQJzVWay2zcA
 ```
 → Detects wallet address, searches `il_mod_crypto` and `ransomwhere` datasets, returns holder info.
 
