@@ -10,7 +10,7 @@ description: "Cross-check one or more targets (crypto wallet addresses, person n
   Triggers on: check sanctions, cross-check against OpenSanctions, is this wallet
   sanctioned, screen this address, OFAC check, sanctions lookup."
 license: MIT
-compatibility: "OpenSanctions data is CC BY-NC 4.0: free for non-commercial use; commercial use requires an OpenSanctions data license."
+compatibility: "Requires python3 >= 3.10 (stdlib sqlite3 with FTS5), curl or wget, and network access to data.opensanctions.org for downloads. Optional: rapidfuzz (--fuzzy), ripgrep (--no-fts). OpenSanctions data is CC BY-NC 4.0: free for non-commercial use; commercial use requires an OpenSanctions data license."
 metadata:
   version: "1.0.0"
 ---
