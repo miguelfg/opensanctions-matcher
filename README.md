@@ -1,5 +1,7 @@
 # Opensanctions Matcher AI Skill
 
+[![skills.sh](https://skills.sh/b/miguelfg/opensanctions-matcher)](https://skills.sh/miguelfg/opensanctions-matcher)
+
 An **AI skill** that screens targets against [OpenSanctions](https://www.opensanctions.org/) bulk datasets — no API key, no network calls at search time. Works with Claude Code, Codex, and Gemini to automatically identify the kind of target you want to match against, download the right OpenSanctions dataset, create a searchable index, and run your batch searches against it with full FtM entity context.
 
 Under the hood: SQLite FTS5 full-text search (default) + optional rapidfuzz approximate matching for transliterations and typos.
@@ -21,7 +23,7 @@ Is this Bitcoin address sanctioned? 1123pJv8jzeFQaCV4w644pzQJzVWay2zcA
 Or explicitly invoke:
 
 ```
-/opensanctions-matcher --targets "1A1z7agoat2YMRJVAFF2MUJx2aQBC2z1M" --dataset il_mod_crypto
+/opensanctions-matcher screen T9yb6vP8o8PQJLNmcCkC9wfk73ULTCy2MB
 ```
 
 The skill will:
@@ -37,7 +39,7 @@ The skill will:
 pip install rapidfuzz          # optional, required for --fuzzy
 python3 skills/opensanctions-matcher/scripts/os_search.py \
     --dataset-dir ~/.local/share/opensanctions/il_mod_crypto \
-    --targets "TUFXua1qzfCsFpcZEGXaU7oGFURqQ7RQpy"
+    --targets "T9yb6vP8o8PQJLNmcCkC9wfk73ULTCy2MB" --file ftm
 ```
 
 On first run an FTS5 index is built automatically. Subsequent runs are instant.
@@ -56,17 +58,16 @@ On first run an FTS5 index is built automatically. Subsequent runs are instant.
 
 ## Installation
 
-### As a Claude Code Skill
+### As an Agent Skill (Claude Code, Codex, Cursor, Gemini, …)
 
-The skill installs into the `skills/` directory for use by Claude Code, Codex, and Gemini:
+Install with the [skills CLI](https://www.skills.sh/docs/cli):
 
 ```bash
-git clone https://github.com/miguelfg/opensanctions-matcher.git
-cd opensanctions-matcher
+npx skills add miguelfg/opensanctions-matcher
 pip install rapidfuzz          # optional, required for --fuzzy approximate matching
 ```
 
-Claude Code will auto-discover the skill and make it available via `/opensanctions-matcher` command or natural language triggers.
+The CLI copies `skills/opensanctions-matcher/` into your agent's skills directory. The skill then triggers on natural language ("is this wallet sanctioned?") or via `/opensanctions-matcher` in Claude Code.
 
 ### For Standalone CLI Use
 
@@ -170,10 +171,7 @@ See [OpenSanctions Dataset Catalogue](https://www.opensanctions.org/browse/) to 
 
 ### Skill Integration
 
-The skill is deployed to `skills/opensanctions-matcher/` and automatically discovered by:
-- **Claude Code** — via `.claude/skills/` symlink
-- **Codex** — via `.codex/skills/` symlink  
-- **Gemini** — via `.gemini/skills/` symlink
+The installable skill is `skills/opensanctions-matcher/` (`SKILL.md`, `references/`, `scripts/os_search.py`). `npx skills add` copies it into each agent's skills directory (e.g. `~/.claude/skills/`, `~/.agents/skills/`).
 
 The `SKILL.md` metadata file defines:
 - Trigger phrases (e.g., "check sanctions", "is this wallet sanctioned")
